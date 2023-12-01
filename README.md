@@ -8,6 +8,6 @@ The <em>AMI</em> algorithm is integrated into the [UVDAR](https://github.com/ctu
     - estimates the next appearance of a blinking marker in the most recent image capture by using its past stored $x$ and $y$ image locations.
 3. <em>Verification</em>: 
     - Verifies dynamic data structure and publishes results
-
+tes
 
 ![AMI Algorithm Tracking one TX in desert](.fig/ami_tracking.png "AMI Algorithm tracking one TX in desert")
