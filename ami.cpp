@@ -1,23 +1,23 @@
-#include "omta.h"
+#include "ami.h"
 
 using namespace uvdar;
 
-OMTA::OMTA(const loadedParamsForOMTA& i_params){
+AMI::AMI(const loadedParamsForAMI& i_params){
 
     *loaded_params_ = i_params;
     extended_search_ = std::make_unique<ExtendedSearch>(loaded_params_->decay_factor);
 }
 
-void OMTA::setDebugFlags(bool i_debug){
+void AMI::setDebugFlags(bool i_debug){
     debug_ = i_debug;
 }
 
-void OMTA::updateFramerate(double input) {
+void AMI::updateFramerate(double input) {
   if (input > 1.0)
     framerate_ = input;
 }
 
-bool OMTA::setSequences(std::vector<std::vector<bool>> i_sequences){
+bool AMI::setSequences(std::vector<std::vector<bool>> i_sequences){
   
     original_sequences_ = i_sequences;
     matcher_ = std::make_unique<SignalMatcher>(original_sequences_, loaded_params_->allowed_BER_per_seq);
@@ -25,13 +25,13 @@ bool OMTA::setSequences(std::vector<std::vector<bool>> i_sequences){
         return false;
 
     if((int)original_sequences_[0].size() < loaded_params_->max_zeros_consecutive){
-        ROS_ERROR("[OMTA]: The wanted number of consecutive zeros is higher than the sequence length! Sequence cannot be set. Returning..");
+        ROS_ERROR("[AMI]: The wanted number of consecutive zeros is higher than the sequence length! Sequence cannot be set. Returning..");
         return false;
     }
     return true;
 }
 
-void OMTA::processBuffer(const uvdar_core::ImagePointsWithFloatStampedConstPtr pts_msg) {
+void AMI::processBuffer(const uvdar_core::ImagePointsWithFloatStampedConstPtr pts_msg) {
 
     std::vector<PointState> current_frame;
     for ( auto point_time_stamp : pts_msg->points) {
@@ -46,7 +46,7 @@ void OMTA::processBuffer(const uvdar_core::ImagePointsWithFloatStampedConstPtr p
     cleanPotentialBuffer();
 }
 
-void OMTA::findClosestPixelAndInsert(std::vector<PointState> & current_frame) {   
+void AMI::findClosestPixelAndInsert(std::vector<PointState> & current_frame) {   
     
     std::vector<seqPointer> p_gen_seq;
     {
@@ -79,7 +79,7 @@ void OMTA::findClosestPixelAndInsert(std::vector<PointState> & current_frame) {
     expandedSearch(no_nn, p_gen_seq);
 }
 
-void OMTA::expandedSearch(std::vector<PointState>& no_nn_current_frame, std::vector<seqPointer>& sequences_no_insert){
+void AMI::expandedSearch(std::vector<PointState>& no_nn_current_frame, std::vector<seqPointer>& sequences_no_insert){
     std::scoped_lock lock(mutex_gen_sequences_);
 
     if((int)no_nn_current_frame.size() != 0){
@@ -129,7 +129,7 @@ void OMTA::expandedSearch(std::vector<PointState>& no_nn_current_frame, std::vec
             cv::Point2d bb_right_bottom = cv::Point2d( (x_predicted + x_conf), (y_predicted + y_conf) );
             
             if(debug_){
-                std::cout << "[OMTA]: Predicted Point: x = " << x_predicted << " y = " << y_predicted << " Prediction Interval: x = " << x_conf << " y = " << y_conf << " seq_size " << x.size();
+                std::cout << "[AMI]: Predicted Point: x = " << x_predicted << " y = " << y_predicted << " Prediction Interval: x = " << x_conf << " y = " << y_conf << " seq_size " << x.size();
                 std::cout << "\n";
             }
 
@@ -162,7 +162,7 @@ void OMTA::expandedSearch(std::vector<PointState>& no_nn_current_frame, std::vec
 
     // delete the sequences that are over the max_buffer_length. Elements are deleted from the back of sequence vector
     if(loaded_params_->max_buffer_length < (int)gen_sequences_.size()){
-        ROS_ERROR("[OMTA]: The maximal excepted buffer length of %d is reached! %d points will be discarded. Please consider to set the parameter \"_max_buffer_length_\" higher, if the memory has the capacity.", loaded_params_->max_buffer_length, (int)no_nn_current_frame.size());
+        ROS_ERROR("[AMI]: The maximal excepted buffer length of %d is reached! %d points will be discarded. Please consider to set the parameter \"_max_buffer_length_\" higher, if the memory has the capacity.", loaded_params_->max_buffer_length, (int)no_nn_current_frame.size());
 
         int diff = (int)gen_sequences_.size() - loaded_params_->max_buffer_length;
         for(int i = 0; i < diff; ++i){
@@ -182,7 +182,7 @@ void OMTA::expandedSearch(std::vector<PointState>& no_nn_current_frame, std::vec
 
 }
 
-bool OMTA::checkSequenceValidityWithNewInsert(const seqPointer & seq){
+bool AMI::checkSequenceValidityWithNewInsert(const seqPointer & seq){
     
     if((int)seq->size() >  loaded_params_->max_ones_consecutive){
         int cnt = 0;
@@ -202,14 +202,14 @@ bool OMTA::checkSequenceValidityWithNewInsert(const seqPointer & seq){
     return true; 
 }
 
-void OMTA::insertPointToSequence(std::vector<PointState> & sequence, const PointState signal){
+void AMI::insertPointToSequence(std::vector<PointState> & sequence, const PointState signal){
     sequence.push_back(signal);            
     if(sequence.size() > (original_sequences_[0].size()* loaded_params_->stored_seq_len_factor)){
         sequence.erase(sequence.begin());
     }
 }
 
-void OMTA::insertVPforSequencesWithNoInsert(seqPointer & seq){
+void AMI::insertVPforSequencesWithNoInsert(seqPointer & seq){
     PointState pVirtual;
     pVirtual = seq->end()[-1];
     pVirtual.insert_time = ros::Time::now();
@@ -217,7 +217,7 @@ void OMTA::insertVPforSequencesWithNoInsert(seqPointer & seq){
     insertPointToSequence(*seq, pVirtual);
 }
 
-PredictionStatistics OMTA::selectStatisticsValues(const std::vector<double>& values, const std::vector<double>& time, const double& insert_time){
+PredictionStatistics AMI::selectStatisticsValues(const std::vector<double>& values, const std::vector<double>& time, const double& insert_time){
 
     auto weight_vect = extended_search_->calcNormalizedWeightVect(time);
     
@@ -252,7 +252,7 @@ PredictionStatistics OMTA::selectStatisticsValues(const std::vector<double>& val
     return statistics;
 }
 
-void OMTA::cleanPotentialBuffer(){
+void AMI::cleanPotentialBuffer(){
 
     std::scoped_lock lock(mutex_gen_sequences_);
     for( auto it_seq = gen_sequences_.begin(); it_seq != gen_sequences_.end();){
@@ -279,11 +279,11 @@ void OMTA::cleanPotentialBuffer(){
     }
 }
 
-std::vector<std::pair<seqPointer, int>> OMTA::getResults(){
+std::vector<std::pair<seqPointer, int>> AMI::getResults(){
 
     std::scoped_lock lock(mutex_gen_sequences_);
     std::vector<std::pair<seqPointer, int>> retrieved_signals;
-    if(debug_) std::cout << "[OMTA]: The retrieved signals:{\n";
+    if(debug_) std::cout << "[AMI]: The retrieved signals:{\n";
     for (auto sequence : gen_sequences_){
         std::vector<bool> led_states;
 
@@ -317,5 +317,5 @@ std::vector<std::pair<seqPointer, int>> OMTA::getResults(){
     return retrieved_signals;
 }
 
-OMTA::~OMTA() {
+AMI::~AMI() {
 }

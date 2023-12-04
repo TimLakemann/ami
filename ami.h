@@ -1,6 +1,6 @@
 #pragma once
 
-#include "extended_search.h"
+#include "ami_extended_search.h"
 #include <uvdar_core/ImagePointsWithFloatStamped.h>
 #include "signal_matcher/signal_matcher.h"
 
@@ -19,8 +19,8 @@ namespace uvdar
     
     using seqPointer = std::shared_ptr<std::vector<PointState>>;
 
-    // loaded params from the launch file and passed to the OMTA
-    struct loadedParamsForOMTA{
+    // loaded params from the launch file and passed to the AMI
+    struct loadedParamsForAMI{
         cv::Point max_px_shift;
         int max_zeros_consecutive;
         int max_ones_consecutive;
@@ -32,12 +32,12 @@ namespace uvdar
         int allowed_BER_per_seq;
     };
 
-    class OMTA {
+    class AMI {
     
     private:
         bool debug_ = false;
 
-        std::unique_ptr<loadedParamsForOMTA> loaded_params_ = std::make_unique<loadedParamsForOMTA>();
+        std::unique_ptr<loadedParamsForAMI> loaded_params_ = std::make_unique<loadedParamsForAMI>();
 
         double framerate_;
         const double prediction_margin_ = 0.0;
@@ -99,8 +99,8 @@ namespace uvdar
 
     public:
 
-        OMTA(const loadedParamsForOMTA&);
-        ~OMTA();
+        AMI(const loadedParamsForAMI&);
+        ~AMI();
         
         void setDebugFlags(bool);
         void updateFramerate(double);
