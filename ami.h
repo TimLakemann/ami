@@ -19,8 +19,8 @@ namespace uvdar
     
     using seqPointer = std::shared_ptr<std::vector<PointState>>;
 
-    // loaded params from the launch file and passed to the ami
-    struct loadedParamsForami{
+    // loaded params from the launch file and passed to the AMI
+    struct loadedParamsForAMI{
         cv::Point max_px_shift;
         int max_zeros_consecutive;
         int max_ones_consecutive;
@@ -32,12 +32,12 @@ namespace uvdar
         int allowed_BER_per_seq;
     };
 
-    class ami {
+    class AMI {
     
     private:
         bool debug_ = false;
 
-        std::unique_ptr<loadedParamsForami> loaded_params_ = std::make_unique<loadedParamsForami>();
+        std::unique_ptr<loadedParamsForAMI> loaded_params_ = std::make_unique<loadedParamsForAMI>();
 
         double framerate_;
         const double prediction_margin_ = 0.0;
@@ -99,8 +99,8 @@ namespace uvdar
 
     public:
 
-        ami(const loadedParamsForami&);
-        ~ami();
+        AMI(const loadedParamsForAMI&);
+        ~AMI();
         
         void setDebugFlags(bool);
         void updateFramerate(double);
