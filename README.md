@@ -9,4 +9,4 @@ The <em>AMI</em> algorithm is integrated into the [UVDAR](https://github.com/ctu
 3. <em>Verification</em>: 
     - Verifies dynamic data structure and publishes results
 
-![AMI Algorithm Tracking one TX in desert](.fig/ami_tracking.png "AMI Algorithm tracking one TX in desert")
+![AMI Algorithm Tracking one TX in desert](.fig/ami_tracking.png "AMI Algorithm tracking one TX in desert")![AMI Algorithm Tracking multiple TXs in simulation](.fig/ami_tracking_sim.png "AMI Algorithm Tracking multiple TXs in simulation")
