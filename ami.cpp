@@ -20,7 +20,7 @@ void AMI::updateFramerate(double input) {
 bool AMI::setSequences(std::vector<std::vector<bool>> i_sequences){
   
     original_sequences_ = i_sequences;
-    matcher_ = std::make_unique<SignalMatcher>(original_sequences_, loaded_params_->allowed_BER_per_seq);
+    matcher_ = std::make_unique<SignalMatcher>(original_sequences_, loaded_params_->allowed_BER_per_seq, true);
     if(original_sequences_.size() == 0)
         return false;
 
@@ -308,7 +308,7 @@ std::vector<std::pair<seqPointer, int>> AMI::getResults(){
             std::cout << "]\n";
         }
 
-        int id = matcher_->matchSignalWithCrossCorr(led_states);
+        int id = matcher_->matchSignal(led_states);
         auto sequence_copy = sequence; 
         retrieved_signals.push_back(std::make_pair(sequence_copy, id));
     }
