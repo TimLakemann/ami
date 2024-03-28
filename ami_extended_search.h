@@ -71,6 +71,7 @@ namespace uvdar{
              */
             bool isInsideBB(const cv::Point2d&, const cv::Point2d&, const cv::Point2d&);
 
+            double euclideanDistance(const cv::Point2d&, const cv::Point2d&);
             /**
              * @brief compute the confidence interval by computing the regression accuracy and multiplying with wanted t-quantil percentage
              * 

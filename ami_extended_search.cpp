@@ -108,7 +108,6 @@ namespace uvdar
 
         const int n = (int)values.size();
         const int dof = n - (int)prediction_vals.coeff.size();
-
         // earlier caught - here to guarantee standalone functionality 
         if (prediction_vals.mean_independent == -1.0 || dof <= 0)
         {
@@ -139,6 +138,12 @@ namespace uvdar
             return true;
         }
         return false;
+    }
+    
+    double ExtendedSearch::euclideanDistance(const cv::Point2d &point1, const cv::Point2d &point2)
+    {
+        double distance = sqrt( pow( ( point1.x - point2.x ) , 2) + pow( ( point1.y -  point2.y ), 2 ) );
+        return distance;
     }
 
 } // uvdar

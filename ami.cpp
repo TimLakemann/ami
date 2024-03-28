@@ -53,30 +53,41 @@ void AMI::findClosestPixelAndInsert(std::vector<PointState> & current_frame) {
         std::scoped_lock lock(mutex_gen_sequences_);
         p_gen_seq = gen_sequences_;
     }    
-    std::vector<PointState> no_nn;
-    for(auto & curr_point : current_frame){
-        bool nn = false;
-        {
-            std::scoped_lock lock(mutex_gen_sequences_);
-            for(auto seq = p_gen_seq.begin(); seq != p_gen_seq.end(); ++seq){
-                PointState last_inserted = (*seq)->end()[-1];
-                cv::Point2d bb_left_top = last_inserted.point - cv::Point2d(loaded_params_->max_px_shift);
-                cv::Point2d bb_right_bottom = last_inserted.point + cv::Point2d(loaded_params_->max_px_shift);
-                if(extended_search_->isInsideBB( curr_point.point, bb_left_top, bb_right_bottom)){
-                    nn = true;
-                    insertPointToSequence(**seq, curr_point);    
-                    p_gen_seq.erase(seq);
-                    break;
-                }else{
-                    nn = false;
-                }
+    
+    {
+    std::scoped_lock lock(mutex_gen_sequences_);
+    for(auto seq = p_gen_seq.begin(); seq != p_gen_seq.end();){
+    
+        PointState last_inserted = (*seq)->end()[-1];
+        cv::Point2d bb_left_top = last_inserted.point - cv::Point2d(loaded_params_->max_px_shift);
+        cv::Point2d bb_right_bottom = last_inserted.point + cv::Point2d(loaded_params_->max_px_shift);
+        
+        std::vector<PointState>::iterator it; 
+        double closest_distance = 1000.0;
+        cv::Point2d closest_point;
+        std::vector<PointState>::iterator it_2 = current_frame.end();
+        for(it = current_frame.begin(); it != current_frame.end(); ++it){
+            
+            double curr_dist = extended_search_->euclideanDistance((*it).point, last_inserted.point);
+            if(curr_dist <= closest_distance){
+                closest_distance = curr_dist; 
+                it_2 = it;
             }
         }
-        if(nn == false){
-            no_nn.push_back(curr_point);
+        if(it_2 != current_frame.end()){
+            if( extended_search_->isInsideBB( (*it_2).point, bb_left_top, bb_right_bottom ) ){
+                insertPointToSequence(**seq, *it_2);    
+                seq = p_gen_seq.erase(seq);
+                it_2 = current_frame.erase(it_2);
+            }else{
+                ++seq;
+            }
+        }else{
+            ++seq;
         }
     }
-    expandedSearch(no_nn, p_gen_seq);
+    }    
+    expandedSearch(current_frame, p_gen_seq);
 }
 
 void AMI::expandedSearch(std::vector<PointState>& no_nn_current_frame, std::vector<seqPointer>& sequences_no_insert){
@@ -84,13 +95,11 @@ void AMI::expandedSearch(std::vector<PointState>& no_nn_current_frame, std::vect
 
     if((int)no_nn_current_frame.size() != 0){
         double insert_time = no_nn_current_frame[0].insert_time.toSec() + prediction_margin_;
-        // std::vector<SeqWithTrajectory> sequences;
-        // for(int k = 0; k < (int)sequences_no_insert.size(); ++k){
         for(auto it_seq = sequences_no_insert.begin();  it_seq != sequences_no_insert.end();){
-
             if((*it_seq)->size() == 0)continue;
             
             if(!checkSequenceValidityWithNewInsert(*it_seq)){
+                std::cout << " Sequence Invalid Discarding\n";
                 continue;
             }
 
@@ -109,24 +118,28 @@ void AMI::expandedSearch(std::vector<PointState>& no_nn_current_frame, std::vect
             PredictionStatistics y_predictions = selectStatisticsValues(y, time, insert_time);
             if( !x_predictions.poly_reg_computed || !y_predictions.poly_reg_computed){
                 ++it_seq;
+                std::cout << "POLY not computed\n";
                 continue;
             }
             last_point.x_statistics = x_predictions;
             last_point.y_statistics = y_predictions;
             double x_predicted = last_point.x_statistics.predicted_coordinate;
             double y_predicted = last_point.y_statistics.predicted_coordinate;
-
+// 
             last_point.x_statistics.confidence_interval = ( last_point.x_statistics.confidence_interval > (loaded_params_->max_px_shift.x * 2) ) ? (loaded_params_->max_px_shift.x * 2) : last_point.x_statistics.confidence_interval;
             last_point.y_statistics.confidence_interval = ( last_point.y_statistics.confidence_interval > (loaded_params_->max_px_shift.y * 2) ) ? (loaded_params_->max_px_shift.y * 2) : last_point.y_statistics.confidence_interval;
-
+// 
             last_point.x_statistics.confidence_interval = ( last_point.x_statistics.confidence_interval < (loaded_params_->max_px_shift.x)) ? (loaded_params_->max_px_shift.x) : last_point.x_statistics.confidence_interval;
             last_point.y_statistics.confidence_interval = ( last_point.y_statistics.confidence_interval < (loaded_params_->max_px_shift.x)) ? (loaded_params_->max_px_shift.x) : last_point.y_statistics.confidence_interval;
+// 
 
             double x_conf = last_point.x_statistics.confidence_interval;
             double y_conf = last_point.y_statistics.confidence_interval; 
-             
+            //  
             cv::Point2d bb_left_top = cv::Point2d( (x_predicted - x_conf), (y_predicted - y_conf) );
             cv::Point2d bb_right_bottom = cv::Point2d( (x_predicted + x_conf), (y_predicted + y_conf) );
+
+            std::cout << "x conf " << x_conf << " y conf  " << y_conf << "\n";
             
             if(debug_){
                 std::cout << "[AMI]: Predicted Point: x = " << x_predicted << " y = " << y_predicted << " Prediction Interval: x = " << x_conf << " y = " << y_conf << " seq_size " << x.size();
@@ -135,16 +148,35 @@ void AMI::expandedSearch(std::vector<PointState>& no_nn_current_frame, std::vect
 
             bool deleted = false;
             for(auto it_frame = no_nn_current_frame.begin(); it_frame != no_nn_current_frame.end();){
+                int size_no_insert = (int)no_nn_current_frame.size();
                 if(extended_search_->isInsideBB(it_frame->point, bb_left_top, bb_right_bottom)){
                     it_frame->x_statistics = last_point.x_statistics;
                     it_frame->y_statistics = last_point.y_statistics;
                     insertPointToSequence(*(*it_seq), *it_frame);
+                    // std::cout << "\t match";
                     it_frame = no_nn_current_frame.erase(it_frame);
                     it_seq = sequences_no_insert.erase(it_seq); 
                     deleted = true;
                     break;
-                }else{   
+                }else{
+                    if (size_no_insert == 1 && (int)sequences_no_insert.size() == 1){
+                        if( (bb_left_top.x <= it_frame->point.x && it_frame->point.x <= bb_right_bottom.x ) || ( bb_left_top.y <= it_frame->point.y && it_frame->point.y <= bb_right_bottom.y)){
+                            it_frame->x_statistics = last_point.x_statistics;
+                            it_frame->y_statistics = last_point.y_statistics;
+                            insertPointToSequence(*(*it_seq), *it_frame);
+                            // std::cout << "match size equals one \n";
+                            it_frame = no_nn_current_frame.erase(it_frame);
+                            it_seq = sequences_no_insert.erase(it_seq); 
+                            deleted = true;
+                            break;
+                        }else{
+                            // std::cout << "No match - bb -  left x" << bb_left_top.x << " < " << it_frame->point.x << " < " << bb_right_bottom.x << " y " << bb_left_top.y << " < " << it_frame->point.y << " < " << bb_right_bottom.y << "\n";
+                            ++it_frame;
+                        }
+                    }else{
+                    // std::cout << "No match SIZE x" << bb_left_top.x << " < " << it_frame->point.x << " < " << bb_right_bottom.x << " y " << bb_left_top.y << " < " << it_frame->point.y << " < " << bb_right_bottom.y << "\n";
                     ++it_frame;
+                    }
                 }
             }
             if(!deleted){
@@ -227,8 +259,8 @@ PredictionStatistics AMI::selectStatisticsValues(const std::vector<double>& valu
     statistics.poly_reg_computed = false;
     int poly_order = loaded_params_->poly_order;
 
-    if((int)values.size() < poly_order && values.size() > 0){
-        poly_order = values.size();
+    if( 0 < (int)values.size() && (int)values.size() < poly_order ){
+        poly_order = values.size() - 2;
     }
 
     if((int)values.size() > 1){
