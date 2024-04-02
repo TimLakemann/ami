@@ -63,8 +63,7 @@ void AMI::findClosestPixelAndInsert(std::vector<PointState> & current_frame) {
         cv::Point2d bb_right_bottom = last_inserted.point + cv::Point2d(loaded_params_->max_px_shift);
         
         std::vector<PointState>::iterator it; 
-        double closest_distance = 1000.0;
-        cv::Point2d closest_point;
+        double closest_distance = std::numeric_limits<double>::max();
         std::vector<PointState>::iterator it_2 = current_frame.end();
         for(it = current_frame.begin(); it != current_frame.end(); ++it){
             
@@ -97,12 +96,6 @@ void AMI::extendedSearch(std::vector<PointState>& no_nn_current_frame, std::vect
         double insert_time = no_nn_current_frame[0].insert_time.toSec() + prediction_margin_;
         for(auto it_seq = sequences_no_insert.begin();  it_seq != sequences_no_insert.end();){
             if((*it_seq)->size() == 0)continue;
-            
-            if(!checkSequenceValidityWithNewInsert(*it_seq)){
-                std::cout << " Sequence Invalid Discarding\n";
-                continue;
-            }
-
 
             std::vector<double> x,y,time;
             for(const auto point : **it_seq){
@@ -210,28 +203,7 @@ void AMI::extendedSearch(std::vector<PointState>& no_nn_current_frame, std::vect
         vect.emplace_back(point);
         gen_sequences_.emplace_back(std::make_shared<std::vector<PointState>>(vect));
     }
-    
 
-}
-
-bool AMI::checkSequenceValidityWithNewInsert(const seqPointer & seq){
-    
-    if((int)seq->size() >  loaded_params_->max_ones_consecutive){
-        int cnt = 0;
-        for(int i = 0; i < loaded_params_->max_ones_consecutive; ++i){
-            if(seq->end()[-(i+1)].led_state == true) ++cnt; 
-        }
-        if(cnt >  loaded_params_->max_ones_consecutive) return false; 
-    }
-
-    if((int)seq->size() > loaded_params_->max_zeros_consecutive){
-        int cnt =0;
-        for(int i = 0; i < loaded_params_->max_zeros_consecutive; ++i){
-             if(!(seq->end()[-(i+1)].led_state)) ++cnt;
-        }
-        if(cnt > loaded_params_->max_zeros_consecutive) return false;
-    }
-    return true; 
 }
 
 void AMI::insertPointToSequence(std::vector<PointState> & sequence, const PointState signal){

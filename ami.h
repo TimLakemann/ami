@@ -61,14 +61,6 @@ namespace uvdar
          * @param sequences_no_insert vector of sequences with no new inserted points in the current frame
          */
         void extendedSearch(std::vector<PointState>& , std::vector<seqPointer>&);
-        
-        /**
-         * @brief checks if it is allowed to insert a new "on"-point to the passed sequence
-         * @param seq check this sequence
-         * @return true if a new inserted point agrees with current settings for the sequence
-         * @return false if new inserted point violates current settings for the sequence
-         */
-        bool checkSequenceValidityWithNewInsert(const seqPointer &);
 
         /**
          * @brief push the current point to the end of the sequence + delete first element if seq exceeds the wanted sequence length for the polynomial regression
