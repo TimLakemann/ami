@@ -139,43 +139,32 @@ void AMI::extendedSearch(std::vector<PointState>& no_nn_current_frame, std::vect
                 std::cout << "\n";
             }
 
-            bool deleted = false;
-            for(auto it_frame = no_nn_current_frame.begin(); it_frame != no_nn_current_frame.end();){
-                int size_no_insert = (int)no_nn_current_frame.size();
-                if(extended_search_->isInsideBB(it_frame->point, bb_left_top, bb_right_bottom)){
-                    it_frame->x_statistics = last_point.x_statistics;
-                    it_frame->y_statistics = last_point.y_statistics;
-                    insertPointToSequence(*(*it_seq), *it_frame);
-                    // std::cout << "\t match";
-                    it_frame = no_nn_current_frame.erase(it_frame);
-                    it_seq = sequences_no_insert.erase(it_seq); 
-                    deleted = true;
-                    break;
-                }else{
-                    if (size_no_insert == 1 && (int)sequences_no_insert.size() == 1){
-                        if( (bb_left_top.x <= it_frame->point.x && it_frame->point.x <= bb_right_bottom.x ) || ( bb_left_top.y <= it_frame->point.y && it_frame->point.y <= bb_right_bottom.y)){
-                            it_frame->x_statistics = last_point.x_statistics;
-                            it_frame->y_statistics = last_point.y_statistics;
-                            insertPointToSequence(*(*it_seq), *it_frame);
-                            // std::cout << "match size equals one \n";
-                            it_frame = no_nn_current_frame.erase(it_frame);
-                            it_seq = sequences_no_insert.erase(it_seq); 
-                            deleted = true;
-                            break;
-                        }else{
-                            // std::cout << "No match - bb -  left x" << bb_left_top.x << " < " << it_frame->point.x << " < " << bb_right_bottom.x << " y " << bb_left_top.y << " < " << it_frame->point.y << " < " << bb_right_bottom.y << "\n";
-                            ++it_frame;
-                        }
-                    }else{
-                    // std::cout << "No match SIZE x" << bb_left_top.x << " < " << it_frame->point.x << " < " << bb_right_bottom.x << " y " << bb_left_top.y << " < " << it_frame->point.y << " < " << bb_right_bottom.y << "\n";
-                    ++it_frame;
-                    }
+            double closest_distance = std::numeric_limits<double>::max();
+            std::vector<PointState>::iterator selected_it = no_nn_current_frame.end();
+            for(auto it_frame = no_nn_current_frame.begin(); it_frame != no_nn_current_frame.end(); ++it_frame){
+
+                double curr_dist = extended_search_->euclideanDistance((*it_frame).point, last_point.point);
+                if(curr_dist <= closest_distance){
+                    closest_distance = curr_dist; 
+                    selected_it = it_frame;
                 }
             }
-            if(!deleted){
+
+            if(selected_it != no_nn_current_frame.end()){
+                if( extended_search_->isInsideBB( (*selected_it).point, bb_left_top, bb_right_bottom ) ){
+                    selected_it->x_statistics = last_point.x_statistics;
+                    selected_it->y_statistics = last_point.y_statistics;
+                    insertPointToSequence(*(*it_seq), *selected_it);
+                    selected_it = no_nn_current_frame.erase(selected_it);
+                    it_seq = sequences_no_insert.erase(it_seq); 
+                }else{
+                    ++it_seq;
+                }
+            }else{
                 ++it_seq;
             }
         }
+
     }
 
 
