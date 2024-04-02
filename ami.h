@@ -60,7 +60,7 @@ namespace uvdar
          * @param no_nn_current_frame vector of points in the current frame, with no nearest neighbour in the current sequences
          * @param sequences_no_insert vector of sequences with no new inserted points in the current frame
          */
-        void expandedSearch(std::vector<PointState>& , std::vector<seqPointer>&);
+        void extendedSearch(std::vector<PointState>& , std::vector<seqPointer>&);
         
         /**
          * @brief checks if it is allowed to insert a new "on"-point to the passed sequence

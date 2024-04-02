@@ -87,10 +87,10 @@ void AMI::findClosestPixelAndInsert(std::vector<PointState> & current_frame) {
         }
     }
     }    
-    expandedSearch(current_frame, p_gen_seq);
+    extendedSearch(current_frame, p_gen_seq);
 }
 
-void AMI::expandedSearch(std::vector<PointState>& no_nn_current_frame, std::vector<seqPointer>& sequences_no_insert){
+void AMI::extendedSearch(std::vector<PointState>& no_nn_current_frame, std::vector<seqPointer>& sequences_no_insert){
     std::scoped_lock lock(mutex_gen_sequences_);
 
     if((int)no_nn_current_frame.size() != 0){
