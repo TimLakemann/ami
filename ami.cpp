@@ -111,28 +111,25 @@ void AMI::extendedSearch(std::vector<PointState>& no_nn_current_frame, std::vect
             PredictionStatistics y_predictions = selectStatisticsValues(y, time, insert_time);
             if( !x_predictions.poly_reg_computed || !y_predictions.poly_reg_computed){
                 ++it_seq;
-                std::cout << "POLY not computed\n";
                 continue;
             }
             last_point.x_statistics = x_predictions;
             last_point.y_statistics = y_predictions;
             double x_predicted = last_point.x_statistics.predicted_coordinate;
             double y_predicted = last_point.y_statistics.predicted_coordinate;
-// 
+
             last_point.x_statistics.confidence_interval = ( last_point.x_statistics.confidence_interval > (loaded_params_->max_px_shift.x * 2) ) ? (loaded_params_->max_px_shift.x * 2) : last_point.x_statistics.confidence_interval;
             last_point.y_statistics.confidence_interval = ( last_point.y_statistics.confidence_interval > (loaded_params_->max_px_shift.y * 2) ) ? (loaded_params_->max_px_shift.y * 2) : last_point.y_statistics.confidence_interval;
-// 
+
             last_point.x_statistics.confidence_interval = ( last_point.x_statistics.confidence_interval < (loaded_params_->max_px_shift.x)) ? (loaded_params_->max_px_shift.x) : last_point.x_statistics.confidence_interval;
             last_point.y_statistics.confidence_interval = ( last_point.y_statistics.confidence_interval < (loaded_params_->max_px_shift.x)) ? (loaded_params_->max_px_shift.x) : last_point.y_statistics.confidence_interval;
-// 
+
 
             double x_conf = last_point.x_statistics.confidence_interval;
             double y_conf = last_point.y_statistics.confidence_interval; 
-            //  
+             
             cv::Point2d bb_left_top = cv::Point2d( (x_predicted - x_conf), (y_predicted - y_conf) );
             cv::Point2d bb_right_bottom = cv::Point2d( (x_predicted + x_conf), (y_predicted + y_conf) );
-
-            std::cout << "x conf " << x_conf << " y conf  " << y_conf << "\n";
             
             if(debug_){
                 std::cout << "[AMI]: Predicted Point: x = " << x_predicted << " y = " << y_predicted << " Prediction Interval: x = " << x_conf << " y = " << y_conf << " seq_size " << x.size();
@@ -172,7 +169,6 @@ void AMI::extendedSearch(std::vector<PointState>& no_nn_current_frame, std::vect
     for(auto seq : sequences_no_insert){
         insertVPforSequencesWithNoInsert(seq);
     }
-
 
     // delete the sequences that are over the max_buffer_length. Elements are deleted from the back of sequence vector
     if(loaded_params_->max_buffer_length < (int)gen_sequences_.size()){
