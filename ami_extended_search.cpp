@@ -123,9 +123,10 @@ namespace uvdar
 
         double standard_error = sqrt(unb_estimate_error_var + (1 + 1 / n + ((prediction_vals.time_pred - prediction_vals.mean_independent) / var_time)));
 
-        double percentage_scaled = (100.0 - double(wanted_percentage)) / 100.0;
+        double percentage_scaled = double(wanted_percentage)/100.0;
+        double percentage_two_sided = ( 1 - percentage_scaled ) / 2 + percentage_scaled;
         boost::math::students_t dist(dof);
-        double t = quantile(complement(dist, percentage_scaled / 2.0));
+        double t = quantile(dist, percentage_two_sided);
         double conf_interval_prediction = t * standard_error;
 
         return conf_interval_prediction;
