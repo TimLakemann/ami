@@ -63,7 +63,7 @@ void AMI::findClosestPixelAndInsert(std::vector<PointState> & current_frame) {
         cv::Point2d bb_right_bottom = last_inserted.point + cv::Point2d(loaded_params_->max_px_shift);
         
         std::vector<PointState>::iterator it; 
-        double closest_distance = -1.0;
+        double closest_distance = std::numeric_limits<double>::max();
         std::vector<PointState>::iterator it_2 = current_frame.end();
         for(it = current_frame.begin(); it != current_frame.end(); ++it){
             
@@ -118,6 +118,7 @@ void AMI::extendedSearch(std::vector<PointState>& no_nn_current_frame, std::vect
             double x_predicted = last_point.x_statistics.predicted_coordinate;
             double y_predicted = last_point.y_statistics.predicted_coordinate;
 
+
             last_point.x_statistics.confidence_interval = ( last_point.x_statistics.confidence_interval > (loaded_params_->max_px_shift.x * 2) ) ? (loaded_params_->max_px_shift.x * 2) : last_point.x_statistics.confidence_interval;
             last_point.y_statistics.confidence_interval = ( last_point.y_statistics.confidence_interval > (loaded_params_->max_px_shift.y * 2) ) ? (loaded_params_->max_px_shift.y * 2) : last_point.y_statistics.confidence_interval;
 
@@ -136,7 +137,7 @@ void AMI::extendedSearch(std::vector<PointState>& no_nn_current_frame, std::vect
                 std::cout << "\n";
             }
 
-            double closest_distance = -1.0;
+            double closest_distance = std::numeric_limits<double>::max();
             std::vector<PointState>::iterator selected_it = no_nn_current_frame.end();
             for(auto it_frame = no_nn_current_frame.begin(); it_frame != no_nn_current_frame.end(); ++it_frame){
 
