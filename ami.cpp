@@ -24,8 +24,8 @@ bool AMI::setSequences(std::vector<std::vector<bool>> i_sequences){
     if(original_sequences_.size() == 0)
         return false;
 
-    if((int)original_sequences_[0].size() < loaded_params_->max_zeros_consecutive){
-        ROS_ERROR("[AMI]: The wanted number of consecutive zeros is higher than the sequence length! Sequence cannot be set. Returning..");
+    if( ( loaded_params_->stored_seq_len_factor * (int)original_sequences_[0].size() )  < loaded_params_->max_zeros_consecutive){
+        ROS_ERROR("[AMI]: The wanted number of consecutive zeros is higher than the possible sequence length in the buffer! Sequence cannot be set. Returning..");
         return false;
     }
     return true;

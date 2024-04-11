@@ -23,7 +23,6 @@ namespace uvdar
     struct loadedParamsForAMI{
         cv::Point max_px_shift;
         int max_zeros_consecutive;
-        int max_ones_consecutive;
         int stored_seq_len_factor; // the multiplication factor how long the sequence should be for calculating the trajectory   
         int max_buffer_length; // number of accepted sequences in the buffer
         int poly_order;
