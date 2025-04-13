@@ -31,7 +31,7 @@ bool AMI::setSequences(std::vector<std::vector<bool>> i_sequences){
     return true;
 }
 
-void AMI::processBuffer(const uvdar_core::ImagePointsWithFloatStampedConstPtr pts_msg) {
+void AMI::processBuffer(const uvdar_robofly::ImagePointsWithFloatStampedConstPtr pts_msg) {
 
     std::vector<PointState> current_frame;
     for ( auto point_time_stamp : pts_msg->points) {

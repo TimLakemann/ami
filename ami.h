@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ami_extended_search.h"
-#include <uvdar_core/ImagePointsWithFloatStamped.h>
+#include <uvdar_robofly/ImagePointsWithFloatStamped.h>
 #include "signal_matcher/signal_matcher.h"
 
 namespace uvdar
@@ -108,7 +108,7 @@ namespace uvdar
          * @brief called by blink processor - inserts point to custom data structure + calls findClosestPixelAndInsert() and cleanPotentialBuffer()
          * @param points in mrs_msgs format
          */
-        void processBuffer(const uvdar_core::ImagePointsWithFloatStampedConstPtr);
+        void processBuffer(const uvdar_robofly::ImagePointsWithFloatStampedConstPtr);
 
         /**
         * @brief compares the original sequences with the extracted ones.
