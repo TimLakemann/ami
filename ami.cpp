@@ -17,6 +17,10 @@ void AMI::updateFramerate(double input) {
     framerate_ = input;
 }
 
+void AMI::setMode(bool mode) {
+  com_ = mode;
+}
+
 bool AMI::setSequences(std::vector<std::vector<bool>> i_sequences){
   
     original_sequences_ = i_sequences;
@@ -269,23 +273,117 @@ void AMI::cleanPotentialBuffer(){
     }
 }
 
-std::vector<std::pair<seqPointer, int>> AMI::getResults(){
+std::vector<PointState> AMI::processSequenceBasic(const seqPointer& sequence, const std::vector<bool>& original_sequence) {
+    std::vector<PointState> selected;
+
+    if ((int)(*sequence).size() > (int)original_sequence.size()) {
+        int diff = (int)(*sequence).size() - (int)original_sequence.size();
+        for (int i = diff; i < (int)(*sequence).size(); ++i) {
+            selected.push_back((*sequence)[i]);
+        }
+    } else {
+        selected = *sequence;
+    }
+
+    return selected;
+}
+
+std::vector<std::pair<std::pair<seqPointer, int>, std::vector<int>>> AMI::getResults(){
+
+    int frame_length = loaded_params_->frame_length;
 
     std::scoped_lock lock(mutex_gen_sequences_);
-    std::vector<std::pair<seqPointer, int>> retrieved_signals;
-    if(debug_) std::cout << "[AMI]: The retrieved signals:{\n";
+    std::vector<std::pair<std::pair<seqPointer, int>, std::vector<int>>> retrieved_signals;
+    if(debug_){ 
+      std::cout << "[AMI]: The retrieved signals:{\n";
+    }
     for (auto sequence : gen_sequences_){
         std::vector<bool> led_states;
 
+        std::vector<int> msg_frame(frame_length, 0);
+        
         std::vector<PointState> selected;
-        if ((int)(*sequence).size() > (int)original_sequences_[0].size()){
-            int diff = (int)(*sequence).size() - (int)original_sequences_[0].size();
-            for(int i = diff; i < (int)(*sequence).size(); ++i){
-                selected.push_back((*sequence)[i]);
+       
+        if(com_){ //signal matching for communication mode
+          std::vector<bool> header_mask = {1, 1, 1, 1};
+          
+          if((int)(*sequence).size() > (int)header_mask.size()){
+            
+            bool matched = false;
+            
+            for(int i = ((int)(*sequence).size() - 1); i >= (int)(header_mask).size(); i--){
+              int match_count = 0;
+              for(int j = 0; j < (int)(header_mask).size(); j++){ 
+                if((*sequence)[i - j].led_state == header_mask[(int)(header_mask).size() - j - 1]){
+                  match_count++;
+                }
+              }
+              if(match_count == (int)header_mask.size()){
+                matched = true;
+              
+                int bits_on_right = (int)(*sequence).size() - i - 1;
+                int bits_on_left = i - (int)(header_mask).size() + 1;
+                  
+                if(bits_on_right >= (int)original_sequences_[0].size()){
+                  if(bits_on_right >= ((int)original_sequences_[0].size() + frame_length)){
+                    /* ROS_INFO("Enough bits on right for both"); */
+                    msg_frame.clear();
+                  }
+                  else if(bits_on_left >= frame_length){
+                    msg_frame.clear();
+                    /* ROS_INFO("Enough bits on right for ID, on left for MSG"); */
+                  }
+                  else{
+                    /* ROS_INFO("Not enought bits for MSG decoding"); */
+                  }
+                } else if(bits_on_left >= (frame_length + (int)original_sequences_[0].size())){
+                  msg_frame.clear();
+                  /* ROS_INFO("Enough bits on left"); */
+                } else{
+                  /* ROS_INFO("Not enough bits for anything"); */
+                }
+
+
+                for(int k = 0; k < (int)original_sequences_[0].size(); k++){
+                  if(bits_on_right >= (int)original_sequences_[0].size()){
+                    selected.push_back((*sequence)[i + 1 + k]);
+                  } else if(bits_on_left >= (frame_length + (int)original_sequences_[0].size())){
+                    selected.push_back((*sequence)[i - 4 + 1 - frame_length - (int)original_sequences_[0].size() + k]);
+                  } else{
+                    selected = processSequenceBasic(sequence, original_sequences_[0]);
+                    break;
+                  }
+                }
+                
+                for(int k = 0; k < frame_length; k++){
+                  if(bits_on_right >= (int)original_sequences_[0].size()){
+                    if(bits_on_right >= ((int)original_sequences_[0].size() + frame_length)){
+                      msg_frame.push_back((int)(*sequence)[i + 1 + (int)original_sequences_[0].size() + k].led_state);
+                    }
+                    else if(bits_on_left >= frame_length){
+                      msg_frame.push_back((int)(*sequence)[i - 4 + 1 - frame_length + k].led_state);
+                    }
+                  } else if(bits_on_left >= (frame_length + (int)original_sequences_[0].size())){
+                    msg_frame.push_back((int)(*sequence)[i - 4 + 1 - frame_length + k].led_state);
+                  }
+                }
+                
+                break;
+              }
             }
-        }else{
-            selected = *sequence;
+
+            if(!matched){
+              selected = processSequenceBasic(sequence, original_sequences_[0]);
+            }
+
+          } else{
+              selected = *sequence;
+          }
+
+        } else{ //signal matching for standard localization mode
+          selected = processSequenceBasic(sequence, original_sequences_[0]);
         }
+
         for (auto point : selected){
             led_states.push_back(point.led_state);        
         }
@@ -300,7 +398,7 @@ std::vector<std::pair<seqPointer, int>> AMI::getResults(){
 
         int id = matcher_->matchSignal(led_states);
         auto sequence_copy = sequence; 
-        retrieved_signals.push_back(std::make_pair(sequence_copy, id));
+        retrieved_signals.push_back(std::make_pair(std::make_pair(sequence_copy, id), msg_frame));
     }
     if(debug_)std::cout << "}\n";
     

@@ -29,12 +29,15 @@ namespace uvdar
         double decay_factor;
         double conf_probab_percent;
         int allowed_BER_per_seq;
+        int frame_length;
     };
 
     class AMI {
-    
+   
+
     private:
         bool debug_ = false;
+        bool com_ = false;
 
         std::unique_ptr<loadedParamsForAMI> loaded_params_ = std::make_unique<loadedParamsForAMI>();
 
@@ -95,6 +98,7 @@ namespace uvdar
         
         void setDebugFlags(bool);
         void updateFramerate(double);
+        void setMode(bool);
 
         /**
          * @brief Set the Sequences for the SignalMatcher
@@ -111,10 +115,16 @@ namespace uvdar
         void processBuffer(const uvdar_core::ImagePointsWithFloatStampedConstPtr);
 
         /**
+        * @brief extracts basic sequence 
+        * @return returns the sequences for matching 
+        */
+        std::vector<PointState> processSequenceBasic(const seqPointer&, const std::vector<bool>&);
+        
+        /**
         * @brief compares the original sequences with the extracted ones.
         * @return returns the sequences with seq id to the bp_tim.cpp 
         */
-        std::vector<std::pair<seqPointer, int>> getResults();
+        std::vector<std::pair<std::pair<seqPointer, int>, std::vector<int>>> getResults();
         
     };    
 } // namespace uvdar
